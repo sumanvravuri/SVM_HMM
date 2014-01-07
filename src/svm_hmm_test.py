@@ -11,7 +11,7 @@ if __name__ == "__main__":
     svm_hmm_obj = svm_hmm.SVM_HMM(feature_file_name = 'declaration_of_independence_feats.pfile', 
                                   label_file_name = 'declaration_of_independence_labels.pfile')
     start_time = time.time()
-    svm_hmm_obj.train(lambda_const = 0.125 / 2, batch_size = 128, num_epochs = 1000)
+    svm_hmm_obj.train(lambda_const = 0.125 / 2, batch_size = 128, num_epochs = 100)
     print "%d epochs of training completed %f secs" % (100, time.time() - start_time)
     svm_hmm_obj.weights.save_weights(weight_name='declaration_of_independence_weights.mat')
     

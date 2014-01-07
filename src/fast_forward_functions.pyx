@@ -60,7 +60,8 @@ def add_bias_to_array(np.ndarray[DTYPEFLOAT_t, ndim=2] data):
 @cython.boundscheck(False)
 def update_gradient(np.ndarray[DTYPEFLOAT_t, ndim=2] sent_features, np.ndarray[DTYPEINT_t, ndim=1] sent_labels, np.ndarray[DTYPEINT_t, ndim=1] most_violated_sequence, 
                     np.ndarray[DTYPEFLOAT_t, ndim=2] gradient_feature_weights, np.ndarray[DTYPEFLOAT_t, ndim=1] gradient_bias, 
-                    np.ndarray[DTYPEFLOAT_t, ndim=2] gradient_time_weights, np.ndarray[DTYPEFLOAT_t, ndim=1] gradient_start_time_weights):
+                    np.ndarray[DTYPEFLOAT_t, ndim=2] gradient_time_weights, np.ndarray[DTYPEFLOAT_t, ndim=1] gradient_start_time_weights,
+                    np.ndarray[DTYPEFLOAT_t, ndim=1] gradient_end_time_weights):
     cdef int num_sent_features = sent_features.shape[0]
     cdef int num_dims = sent_features.shape[1]
     cdef int dim_index, current_violated_label, current_label, observation_index, previous_violated_label, previous_label
@@ -95,6 +96,8 @@ def update_gradient(np.ndarray[DTYPEFLOAT_t, ndim=2] sent_features, np.ndarray[D
         
         previous_label = current_label
         previous_violated_label = current_violated_label
-    
+        
+    gradient_end_time_weights[sent_labels[num_sent_features-1]] -= 1.0
+    gradient_end_time_weights[most_violated_sequence[num_sent_features-1]] += 1.0
 #    return gradient_feature_weights, gradient_bias, gradient_time_weights, gradient_start_time_weights
 

@@ -63,7 +63,8 @@ class SVM_HMM(SVM_HMM_base):
 #                gradient = self.update_gradient(sent_features, sent_labels, most_violated_sequence, gradient)
                 forward_cython.update_gradient(sent_features, sent_labels, most_violated_sequence, 
                                                gradient.feature_weights, gradient.bias,
-                                               gradient.time_weights, gradient.start_time_weights)
+                                               gradient.time_weights, gradient.start_time_weights,
+                                               gradient.end_time_weights)
             self.weights = self.weights * (1. - 1. / epoch_num) - gradient * (learning_rate / batch_size)
 #            self.weights.time_weights = (1. - 1. / epoch_num) * gradient.feature_weights + learning_rate / batch_size * gradient.feature_weights
             weight_norm = self.weights.norm()

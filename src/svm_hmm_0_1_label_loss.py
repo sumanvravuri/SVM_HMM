@@ -69,7 +69,10 @@ class SVM_HMM(SVM_HMM_base):
                 sent_labels = self.labels[start_frame:end_frame]
                 sent_features, _ = self.return_sequence_chunk(self.frame_table, sent_index, num_observations)
                 most_violated_sequence, _ = self.find_most_violated_sentence_labels(sent_features, sent_labels, self.loss_matrix)
-                gradient = self.update_gradient(sent_features, sent_labels, most_violated_sequence, gradient)
+                forward_cython.update_gradient(sent_features, sent_labels, most_violated_sequence, 
+                                               gradient.feature_weights, gradient.bias,
+                                               gradient.time_weights, gradient.start_time_weights,
+                                               gradient.end_time_weights)
             self.weights = self.weights * (1. - 1. / epoch_num) - gradient * (learning_rate / batch_size)
 #            self.weights.time_weights = (1. - 1. / epoch_num) * gradient.feature_weights + learning_rate / batch_size * gradient.feature_weights
             weight_norm = self.weights.norm()
