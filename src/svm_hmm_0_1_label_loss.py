@@ -39,43 +39,13 @@ class SVM_HMM(SVM_HMM_base):
             argmax_features[feature_index] = np.argmax(current_loss_scores, axis=0)
             loss_scores[feature_index] = np.max(current_loss_scores, axis=0)
         
+        loss_scores[-1] += self.weights.end_time_weights
         outputs[-1] = np.argmax(loss_scores[-1])
         for feature_index in range(num_emission_features-1, 0, -1):
             output = outputs[feature_index]
             outputs[feature_index-1] = argmax_features[feature_index, output]
 #        print outputs
         return outputs, loss_scores
-    
-    def update_gradient(self, sent_features, sent_labels, most_violated_sequence, gradient):
-        num_sent_features = sent_features.shape[0]
-        
-        gradient.feature_weights[:,sent_labels[0]] -= sent_features[0]
-        gradient.feature_weights[:,most_violated_sequence[0]] += sent_features[0]
-        
-        gradient.bias[sent_labels[0]] -= 1.0
-        gradient.bias[most_violated_sequence[0]] += 1.0
-        
-        gradient.start_time_weights[sent_labels[0]] -= 1.0
-        gradient.start_time_weights[most_violated_sequence[0]] += 1.0
-        
-#        previous_label = sent_labels[0]
-#        previous_violated_label = most_violated_sequence[0]
-        for observation_index in range(1,num_sent_features):
-            feature = sent_features[observation_index]
-            current_label = sent_labels[observation_index]
-            current_violated_label = most_violated_sequence[observation_index]
-#            print current_violated_label, current_label
-            gradient.feature_weights[:,current_label] -= feature
-            gradient.feature_weights[:,current_violated_label] += feature
-            gradient.bias[current_label] -= 1.0
-            gradient.bias[current_violated_label] += 1.0
-#            previous_label = current_label
-#            previous_violated_label = current_violated_label
-        
-        gradient.time_weights[sent_labels[:-1], sent_labels[1:]] -= 1.0
-        gradient.time_weights[most_violated_sequence[:-1], most_violated_sequence[1:]] += 1.0
-        
-        return gradient
     
     def train(self, lambda_const = 0.5, batch_size = 128, num_epochs = 100):
         """train using structured Pegasos algorithm
@@ -97,8 +67,8 @@ class SVM_HMM(SVM_HMM_base):
                 end_frame = self.frame_table[sent_index+1]
                 num_observations = end_frame - start_frame
                 sent_labels = self.labels[start_frame:end_frame]
-                sent_features, last_sent_index = self.return_sequence_chunk(self.frame_table, sent_index, num_observations)
-                most_violated_sequence, loss_scores = self.find_most_violated_sentence_labels(sent_features, self.labels, self.loss_matrix)
+                sent_features, _ = self.return_sequence_chunk(self.frame_table, sent_index, num_observations)
+                most_violated_sequence, _ = self.find_most_violated_sentence_labels(sent_features, sent_labels, self.loss_matrix)
                 gradient = self.update_gradient(sent_features, sent_labels, most_violated_sequence, gradient)
             self.weights = self.weights * (1. - 1. / epoch_num) - gradient * (learning_rate / batch_size)
 #            self.weights.time_weights = (1. - 1. / epoch_num) * gradient.feature_weights + learning_rate / batch_size * gradient.feature_weights

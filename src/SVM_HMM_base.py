@@ -87,9 +87,9 @@ class SVM_HMM_base(object):
         for chunk_first_sent_index in range(first_sent_index, last_sent_index + 1, num_sequences_per_forward):
             chunk_last_sent_index = min(chunk_first_sent_index + num_sequences_per_forward, last_sent_index)
             chunk_size = frame_table[chunk_last_sent_index] - frame_table[chunk_first_sent_index]
-            sent_features, last_sent_index = self.return_sequence_chunk(frame_table, chunk_first_sent_index, chunk_size)
+            sent_features, _ = self.return_sequence_chunk(frame_table, chunk_first_sent_index, chunk_size)
             end_frame = current_frame + chunk_size
-            outputs[current_frame:end_frame]  = self.find_best_sentence_labels_parallel(sent_features, feature_sequence_lens)
+            outputs[current_frame:end_frame]  = self.find_best_sentence_labels_parallel(sent_features, feature_sequence_lens[chunk_first_sent_index:chunk_last_sent_index])
             current_frame = end_frame
 #            print outputs
 
@@ -109,7 +109,8 @@ class SVM_HMM_base(object):
             end_frame = current_frame + sequence_len
             label_scores, argmax_features = forward_cython.fast_forward_time_chunk(self.weights.time_weights, 
                                                                                    emission_features[current_frame:end_frame], 
-                                                                                   self.weights.start_time_weights)
+                                                                                   self.weights.start_time_weights,
+                                                                                   self.weights.end_time_weights)
             outputs[current_frame:end_frame] = self.naive_backtrace(label_scores, argmax_features)
             current_frame = end_frame
         return outputs
@@ -186,6 +187,7 @@ class SVM_HMM_base(object):
 #            current_time_scores += previous_time_feature.T[:,np.newaxis]
             label_scores[feature_index] = np.max(current_time_scores, axis=0)
             argmax_features[feature_index] = np.argmax(current_time_scores, axis=0)
+        label_scores[-1] += self.weights.end_time_weights
         return label_scores, argmax_features
     
     def classify_dot(self, features, weights, bias):
@@ -303,4 +305,37 @@ class SVM_HMM_base(object):
 #        new_data = np.concatenate((new_data, np.ones((num_examples, 1))), axis=1)
 #        print new_data.flags
         return new_data, last_sent_index
+
+    def update_gradient(self, sent_features, sent_labels, most_violated_sequence, gradient):
+        """TO BE deprecated in favor of cython version
+        """
+        num_sent_features = sent_features.shape[0]
+        
+        gradient.feature_weights[:,sent_labels[0]] -= sent_features[0]
+        gradient.feature_weights[:,most_violated_sequence[0]] += sent_features[0]
+        
+        gradient.bias[sent_labels[0]] -= 1.0
+        gradient.bias[most_violated_sequence[0]] += 1.0
+        
+        gradient.start_time_weights[sent_labels[0]] -= 1.0
+        gradient.start_time_weights[most_violated_sequence[0]] += 1.0
+        
+#        previous_label = sent_labels[0]
+#        previous_violated_label = most_violated_sequence[0]
+        for observation_index in range(1,num_sent_features):
+            feature = sent_features[observation_index]
+            current_label = sent_labels[observation_index]
+            current_violated_label = most_violated_sequence[observation_index]
+#            print current_violated_label, current_label
+            gradient.feature_weights[:,current_label] -= feature
+            gradient.feature_weights[:,current_violated_label] += feature
+            gradient.bias[current_label] -= 1.0
+            gradient.bias[current_violated_label] += 1.0
+#            previous_label = current_label
+#            previous_violated_label = current_violated_label
+        
+        gradient.time_weights[sent_labels[:-1], sent_labels[1:]] -= 1.0
+        gradient.time_weights[most_violated_sequence[:-1], most_violated_sequence[1:]] += 1.0
+        
+        return gradient
         

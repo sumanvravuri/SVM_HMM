@@ -14,7 +14,8 @@ ctypedef np.float_t DTYPEFLOAT_t
 
 #@cython.wraparound(False)
 @cython.boundscheck(False)
-def fast_forward_time_chunk(np.ndarray[DTYPEFLOAT_t, ndim=2] time_weights, np.ndarray[DTYPEFLOAT_t, ndim=2] emission_features, np.ndarray[DTYPEFLOAT_t, ndim=1] start_time_weights):
+def fast_forward_time_chunk(np.ndarray[DTYPEFLOAT_t, ndim=2] time_weights, np.ndarray[DTYPEFLOAT_t, ndim=2] emission_features, 
+                            np.ndarray[DTYPEFLOAT_t, ndim=1] start_time_weights, np.ndarray[DTYPEFLOAT_t, ndim=1] end_time_weights):
     cdef int num_emission_features = emission_features.shape[0]
     cdef int num_labels = emission_features.shape[1]
     
@@ -37,7 +38,11 @@ def fast_forward_time_chunk(np.ndarray[DTYPEFLOAT_t, ndim=2] time_weights, np.nd
                 if current_time_scores[b,a] > label_scores[feature_index,a]:
                     label_scores[feature_index, a] = current_time_scores[b,a]
                     argmax_features[feature_index, a] = b
-
+        
+        #include end_time_weights in the calculation
+        for a in range(num_labels):
+            label_scores[num_emission_features - 1, a] += end_time_weights[a]
+            
     return label_scores, argmax_features
 
 @cython.boundscheck(False)
