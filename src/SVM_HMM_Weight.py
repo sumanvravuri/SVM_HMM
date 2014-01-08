@@ -16,7 +16,7 @@ import copy
 from context_window import context_window
 
 class SVM_HMM_Weight(object):
-    def __init__(self, num_dims=None, num_labels=None, weight_name=None, init_zero_weights = False):
+    def __init__(self, num_dims=None, num_labels=None, weight_name=None, init_zero_weights = False, random_seed = 0):
         if weight_name is not None:
             self.feature_weights, self.time_weights, self.start_time_weights, self.end_time_weights, self.bias = self.load_weights(weight_name)
             return
@@ -30,6 +30,7 @@ class SVM_HMM_Weight(object):
             self.start_time_weights = np.zeros((num_labels,))
             self.end_time_weights = np.zeros((num_labels,))
         else:
+            np.random.seed(random_seed)
             self.feature_weights = np.random.rand(num_dims, num_labels)
             self.bias = np.random.rand(num_labels)
             self.time_weights = np.ones((num_labels, num_labels)) / float(num_labels)
