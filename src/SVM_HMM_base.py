@@ -17,7 +17,7 @@ from SVM_HMM_Weight import SVM_HMM_Weight
 import forward_cython
 
 class SVM_HMM_base(object):
-    def __init__(self, feature_file_name, weight_name = None, label_file_name = None, num_labels = None, context_window = 1, random_seed = 1):
+    def __init__(self, feature_file_name, weight_name = None, label_file_name = None, num_labels = None, context_window = 1, random_seed = 0):
         self.feature_file_name = feature_file_name
         self.num_dims, self.frame_table = self.read_feature_file_stats(self.feature_file_name)
 #        self.num_dims += 1 #add 1 for bias
@@ -27,7 +27,6 @@ class SVM_HMM_base(object):
             self.label_file_name = label_file_name
             self.labels = self.read_label_file(self.label_file_name)
             self.num_labels = np.max(self.labels) + 1
-            self.loss_matrix = np.ones((self.num_labels, self.num_labels)) - np.identity(self.num_labels) #0-1 loss for now
         
         if weight_name != None:
             self.weight_name = weight_name

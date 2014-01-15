@@ -29,8 +29,9 @@ class SVM_HMM(SVM_HMM_base):
         if np.any(outputs != sent_labels):
             return outputs, label_scores + 1.0 #approximate, because the correct sequence could be a lower scoring one
         
-        current_loss_scores = label_scores[-1].T[:,np.newaxis] + self.weights.time_weights + emission_features[-1]
+        current_loss_scores = label_scores[-2].T[:,np.newaxis] + self.weights.time_weights + emission_features[-1][np.newaxis,:]
         current_loss_scores += np.ones(current_loss_scores.shape)
+        current_loss_scores += self.weights.end_time_weights[np.newaxis, :]
         current_loss_scores[sent_labels[-2], sent_labels[-1]] -= 1.0
         label_scores[-1] = np.max(current_loss_scores, axis = 0)
         label_scores[-1] += self.weights.end_time_weights

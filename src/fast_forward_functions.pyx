@@ -33,61 +33,22 @@ def fast_forward_time_chunk(np.ndarray[DTYPEFLOAT_t, ndim=2] time_weights, np.nd
             label_scores[feature_index, current_label_index] = (label_scores[feature_index-1, prev_label_index] + 
                                                                 emission_features[feature_index, current_label_index] + 
                                                                 time_weights[prev_label_index, current_label_index])
+            if feature_index == num_emission_features - 1:
+                label_scores[feature_index, current_label_index] += end_time_weights[current_label_index]
             argmax_features[feature_index, current_label_index] = prev_label_index
             
             for prev_label_index in range(1, num_labels):
                 current_time_scores = (label_scores[feature_index-1, prev_label_index] + 
                                        emission_features[feature_index, current_label_index] + 
                                        time_weights[prev_label_index, current_label_index])
+                if feature_index == num_emission_features - 1:
+                    current_time_scores += end_time_weights[current_label_index]
                 if current_time_scores > label_scores[feature_index, current_label_index]:
                     label_scores[feature_index, current_label_index] = current_time_scores
                     argmax_features[feature_index, current_label_index] = prev_label_index
                 
-    for current_label_index in range(num_labels):
-        label_scores[num_emission_features - 1, current_label_index] += end_time_weights[current_label_index]
-            
-    return label_scores, argmax_features
-
-@cython.boundscheck(False)
-def fast_forward_time_chunk_second_order(np.ndarray[DTYPEFLOAT_t, ndim=3] time_weights, np.ndarray[DTYPEFLOAT_t, ndim=3] emission_features, 
-                                         np.ndarray[DTYPEFLOAT_t, ndim=2] start_time_weights, np.ndarray[DTYPEFLOAT_t, ndim=2] end_time_weights):
-    cdef int num_samps = emission_features.shape[0]
-    cdef int prev_labels = emission_features.shape[1]
-    cdef int num_current_labels = emission_features.shape[2]
-    cdef int num_labels = prev_labels
-    
-    cdef np.ndarray[DTYPEFLOAT_t, ndim=3] label_scores = np.zeros((num_samps, num_labels, num_labels), dtype=DTYPEFLOAT)
-    cdef np.ndarray[DTYPEINT_t, ndim=3] argmax_features = np.zeros((num_samps, num_labels, num_labels), dtype = DTYPEINT)
-#    cdef np.ndarray[DTYPEFLOAT_t, ndim=3] current_time_scores = np.zeros((num_labels, num_labels, num_labels), dtype = DTYPEFLOAT)
-    cdef current_time_scores
-    cdef int sample_index, prev_label_index, current_label_index, next_label_index
-    
-    for prev_label_index in range(num_labels): #NEED TO FIX
-        for current_label_index in range(num_labels):
-            label_scores[0, prev_label_index, current_label_index] = (emission_features[0, current_label_index] + 
-                                                                      start_time_weights[prev_label_index, current_label_index])
-        
-    for feature_index in range(1, num_samps):
-        for next_label_index in range(num_labels):
-            for current_label_index in range(num_labels):
-                prev_label_index = 0
-                label_scores[current_label_index, next_label_index] = (label_scores[feature_index - 1, prev_label_index, current_label_index] + 
-                                                                      emission_features[feature_index, current_label_index, next_label_index] + 
-                                                                      time_weights[prev_label_index, current_label_index, next_label_index])
-                argmax_features[current_label_index, next_label_index] = prev_label_index
-                for prev_label_index in range(num_labels):
-                    current_time_scores = (label_scores[feature_index - 1, prev_label_index, current_label_index] + 
-                                           emission_features[feature_index, current_label_index, next_label_index] + 
-                                           time_weights[prev_label_index, current_label_index, next_label_index])
-                    if current_time_scores > label_scores[current_label_index, next_label_index]:
-                        label_scores[current_label_index, next_label_index] = current_time_scores
-                        argmax_features[current_label_index, next_label_index] = prev_label_index
-                    
-       
-    #include end_time_weights in the calculation
-    for prev_label_index in range(num_labels):
-        for current_label_index in range(num_labels):
-            label_scores[num_samps - 1, prev_label_index, current_label_index] += end_time_weights[prev_label_index, current_label_index]
+#    for current_label_index in range(num_labels):
+#        label_scores[num_emission_features - 1, current_label_index] += end_time_weights[current_label_index]
             
     return label_scores, argmax_features
 

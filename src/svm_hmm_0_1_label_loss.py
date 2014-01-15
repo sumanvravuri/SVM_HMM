@@ -20,6 +20,7 @@ import forward_cython
 class SVM_HMM(SVM_HMM_base):
     def __init__(self, feature_file_name, weight_name = None, label_file_name = None, num_labels = None, context_window = 1):
         super(SVM_HMM,self).__init__(feature_file_name, weight_name, label_file_name, num_labels, context_window)
+        self.loss_matrix = np.ones((self.num_labels, self.num_labels)) - np.identity(self.num_labels) #0-1 loss for now
     
     def find_most_violated_sentence_labels(self, sent_features, labels, loss_matrix):
 #        emission_features = np.dot(sent_features, self.weights.feature_weights) + self.weights.bias
